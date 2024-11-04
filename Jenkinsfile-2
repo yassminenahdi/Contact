@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 1, unit: 'HOURS')
+    }
+
+    environment {
+        SONAR_HOST_URL = 'http://localhost:9000' // URL of your SonarQube instance
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/yassminenahdi/Devops'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    sh './mvnw clean package' // Use ./mvnw if the Maven wrapper is available
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_TOKEN = credentials('sonar-token-id') // Use the Jenkins credential ID here
+            }
+            steps {
+                script {
+                    sh './mvnw sonar:sonar -Dsonar.projectKey=your_project_key -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    sh './mvnw test'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Déploiement en cours...'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Le pipeline a réussi!'
+        }
+        failure {
+            echo 'Le pipeline a échoué!'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
