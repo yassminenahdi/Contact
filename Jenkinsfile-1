@@ -4,12 +4,23 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '5'))
     }
     stages {
+        stage('Build') {
+            steps {
+                sh './mvnw clean install' // Compile et teste le code
+            }
+        }
         stage('Scan') {
             steps {
-                withSonarQubeEnv(installationName: 'sq1') {
-                    sh './mvnw clean org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar'
+                withSonarQubeEnv('sq1') { // Nom de l'installation SonarQube
+                    sh './mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar'
                 }
             }
+        }
+    }
+    post {
+        always {
+            junit '**/target/surefire-reports/*.xml' // Publie les résultats des tests
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true // Archive le JAR
         }
     }
 }
